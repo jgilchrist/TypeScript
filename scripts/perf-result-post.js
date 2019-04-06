@@ -17,32 +17,36 @@ gh.authenticate({
     type: "token",
     token: process.argv[2]
 });
-gh.issues.createComment({
-    number: +source,
-    owner: "Microsoft",
-    repo: "TypeScript",
-    body: `@${requester}
-The results of the perf run you requested are in! Here they are:
 
-${outputTableText}`
-}).then(async data => {
-    console.log(`Results posted!`);
-    const newCommentUrl = data.data.html_url;
-    const comment = await gh.issues.getComment({
+async function main() {
+    const existingComment = await gh.issues.getComment({
         owner: "Microsoft",
         repo: "TypeScript",
         comment_id: +postedComment
     });
-    const newBody = `${comment.data.body}
 
-Update: [The results are in!](${newCommentUrl})`;
-    return await gh.issues.updateComment({
+    const gist = await gh.gists.create({
+        files: { "index.md": { content: outputTableText } },
+        description: `Perf results for ${existingComment.data.html_url}`,
+        public: true
+    });
+
+    await gh.issues.createComment({
+        number: +source,
+        owner: "Microsoft",
+        repo: "TypeScript",
+        body: `@${requester}\The results of the perf run you requested are in! They can be found at: ${gist.data.html_url}`
+    });
+
+    await gh.issues.updateComment({
         owner: "Microsoft",
         repo: "TypeScript",
         comment_id: +postedComment,
-        body: newBody
+        body: `${existingComment.data.body}\n\nUpdate: [The results are in!](${gist.data.html_url})`
     });
-}).catch(e => {
+}
+
+main().catch(e => {
     console.error(e);
     process.exit(1);
 });
