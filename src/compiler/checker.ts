@@ -12555,6 +12555,8 @@ namespace ts {
             }
 
             function findMostOverlappyType(source: Type, unionTarget: UnionOrIntersectionType) {
+                // TODO: Modify this function to return a better choice
+                // when multiple discriminants are involved
                 let bestMatch: Type | undefined;
                 let matchingCount = 0;
                 for (const target of unionTarget.types) {
